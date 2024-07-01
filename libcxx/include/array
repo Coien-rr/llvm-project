@@ -164,6 +164,8 @@ _LIBCPP_PUSH_MACROS
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 
+// NOTE: _Size does not have default value
+// Defining std::array must provide _Tp and _Size
 template <class _Tp, size_t _Size>
 struct _LIBCPP_TEMPLATE_VIS array {
   // types:
@@ -185,6 +187,7 @@ struct _LIBCPP_TEMPLATE_VIS array {
   using reverse_iterator       = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
+  // NOTE: data member of std::array
   _Tp __elems_[_Size];
 
   // No explicit construct/copy/destroy for aggregate type
@@ -230,9 +233,7 @@ struct _LIBCPP_TEMPLATE_VIS array {
   // capacity:
   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR size_type size() const _NOEXCEPT { return _Size; }
   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR size_type max_size() const _NOEXCEPT { return _Size; }
-  _LIBCPP_NODISCARD _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR bool empty() const _NOEXCEPT {
-    return _Size == 0;
-  }
+  _LIBCPP_NODISCARD _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR bool empty() const _NOEXCEPT { return _Size == 0; }
 
   // element access:
   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX17 reference operator[](size_type __n) _NOEXCEPT {
@@ -283,11 +284,17 @@ struct _LIBCPP_TEMPLATE_VIS array<_Tp, 0> {
   typedef std::reverse_iterator<iterator> reverse_iterator;
   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
+  // NOTE: _EmptyType = struct __empty {};
+  // sizeof(__empty): 1
   typedef __conditional_t<is_const<_Tp>::value, const __empty, __empty> _EmptyType;
 
+  // NOTE: just contains one element of provideed type
   struct _ArrayInStructT {
     _Tp __data_[1];
   };
+
+  // NOTE: _ALIGNAS_TYPE(_ArrayInStructT) = alignas(sizeof(_Tp __data_[1])) = alignas(sizeof(_Tp))
+  // This data members(__elems_) is an array of empty structures(__empty) whose array size is the type size(_Tp)
   _ALIGNAS_TYPE(_ArrayInStructT) _EmptyType __elems_[sizeof(_ArrayInStructT)];
 
   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX17 value_type* data() _NOEXCEPT { return nullptr; }
