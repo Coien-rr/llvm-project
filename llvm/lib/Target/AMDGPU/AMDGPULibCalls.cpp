@@ -1129,15 +1129,11 @@ bool AMDGPULibCalls::fold_pow(FPMathOperator *FPOp, IRBuilder<> &B,
   nval = CreateCallEx(B,ExpExpr, nval, "__exp2");
 
   if (needcopysign) {
-    Value *opr_n;
-    Type* rTy = opr0->getType();
     Type* nTyS = B.getIntNTy(eltType->getPrimitiveSizeInBits());
-    Type *nTy = nTyS;
-    if (const auto *vTy = dyn_cast<FixedVectorType>(rTy))
-      nTy = FixedVectorType::get(nTyS, vTy);
+    Type *nTy = FPOp->getType()->getWithNewType(nTyS);
     unsigned size = nTy->getScalarSizeInBits();
-    opr_n = FPOp->getOperand(1);
-    if (opr_n->getType()->isIntegerTy())
+    Value *opr_n = FPOp->getOperand(1);
+    if (opr_n->getType()->getScalarType()->isIntegerTy())
       opr_n = B.CreateZExtOrTrunc(opr_n, nTy, "__ytou");
     else
       opr_n = B.CreateFPToSI(opr1, nTy, "__ytou");
@@ -1215,16 +1211,36 @@ bool AMDGPULibCalls::fold_rootn(FPMathOperator *FPOp, IRBuilder<> &B,
                                "__rootn2div");
     replaceCall(FPOp, nval);
     return true;
-  } else if (ci_opr1 == -2) { // rootn(x, -2) = rsqrt(x)
-    if (FunctionCallee FPExpr =
-            getFunction(M, AMDGPULibFunc(AMDGPULibFunc::EI_RSQRT, FInfo))) {
-      LLVM_DEBUG(errs() << "AMDIC: " << *FPOp << " ---> rsqrt(" << *opr0
-                        << ")\n");
-      Value *nval = CreateCallEx(B,FPExpr, opr0, "__rootn2rsqrt");
-      replaceCall(FPOp, nval);
-      return true;
-    }
   }
+
+  if (ci_opr1 == -2 &&
+      shouldReplaceLibcallWithIntrinsic(CI,
+                                        /*AllowMinSizeF32=*/true,
+                                        /*AllowF64=*/true)) {
+    // rootn(x, -2) = rsqrt(x)
+
+    // The original rootn had looser ulp requirements than the resultant sqrt
+    // and fdiv.
+    MDBuilder MDHelper(M->getContext());
+    MDNode *FPMD = MDHelper.createFPMath(std::max(FPOp->getFPAccuracy(), 2.0f));
+
+    // TODO: Could handle strictfp but need to fix strict sqrt emission
+    FastMathFlags FMF = FPOp->getFastMathFlags();
+    FMF.setAllowContract(true);
+
+    CallInst *Sqrt = B.CreateUnaryIntrinsic(Intrinsic::sqrt, opr0, CI);
+    Instruction *RSqrt = cast<Instruction>(
+        B.CreateFDiv(ConstantFP::get(opr0->getType(), 1.0), Sqrt));
+    Sqrt->setFastMathFlags(FMF);
+    RSqrt->setFastMathFlags(FMF);
+    RSqrt->setMetadata(LLVMContext::MD_fpmath, FPMD);
+
+    LLVM_DEBUG(errs() << "AMDIC: " << *FPOp << " ---> rsqrt(" << *opr0
+                      << ")\n");
+    replaceCall(CI, RSqrt);
+    return true;
+  }
+
   return false;
 }
 
