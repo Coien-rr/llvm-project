@@ -76,8 +76,11 @@ endif()
 
 # Setting these variables will allow the sub-build to put their outputs into
 # the library and bin directories of the top-level build.
+note_log("Set Sub-Build Output Target Path")
 set(LLVM_LIBRARY_OUTPUT_INTDIR ${LLVM_LIBRARY_DIR})
+note_log("Set LLVM_LIBRARY_OUTPUT_INTDIR to ${LLVM_LIBRARY_DIR}")
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${LLVM_TOOLS_BINARY_DIR})
+note_log("Set LLVM_RUNTIME_OUTPUT_INTDIR to ${LLVM_TOOLS_BINARY_DIR}")
 
 # This variable makes sure that e.g. llvm-lit is found.
 set(LLVM_MAIN_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../llvm)
@@ -192,22 +195,22 @@ message(STATUS "LLVM default target triple: ${LLVM_DEFAULT_TARGET_TRIPLE}")
 set(LLVM_TARGET_TRIPLE "${LLVM_DEFAULT_TARGET_TRIPLE}")
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang")
-  set(option_prefix "")
-  if (CMAKE_C_SIMULATE_ID MATCHES "MSVC")
-    set(option_prefix "/clang:")
-  endif()
-  set(print_target_triple ${CMAKE_C_COMPILER} ${option_prefix}--target=${LLVM_DEFAULT_TARGET_TRIPLE} ${option_prefix}-print-target-triple)
-  execute_process(COMMAND ${print_target_triple}
+    set(option_prefix "")
+    if (CMAKE_C_SIMULATE_ID MATCHES "MSVC")
+        set(option_prefix "/clang:")
+    endif()
+    set(print_target_triple ${CMAKE_C_COMPILER} ${option_prefix}--target=${LLVM_DEFAULT_TARGET_TRIPLE} ${option_prefix}-print-target-triple)
+    execute_process(COMMAND ${print_target_triple}
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
     OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(result EQUAL 0)
-    set(LLVM_DEFAULT_TARGET_TRIPLE ${output})
-  else()
-    string(REPLACE ";" " " print_target_triple "${print_target_triple}")
-    # TODO(#97876): Report an error.
-    message(WARNING "Failed to execute `${print_target_triple}` to normalize target triple.")
-  endif()
+    if(result EQUAL 0)
+        set(LLVM_DEFAULT_TARGET_TRIPLE ${output})
+    else()
+        string(REPLACE ";" " " print_target_triple "${print_target_triple}")
+        # TODO( #97876): Report an error.
+        message(WARNING "Failed to execute `${print_target_triple}` to normalize target triple.")
+    endif()
 endif()
 
 option(LLVM_INCLUDE_TESTS "Generate build targets for the runtimes unit tests." ON)
