@@ -194,12 +194,17 @@ message(STATUS "LLVM default target triple: ${LLVM_DEFAULT_TARGET_TRIPLE}")
 
 set(LLVM_TARGET_TRIPLE "${LLVM_DEFAULT_TARGET_TRIPLE}")
 
+note_log("CMAKE_C_COMPILE_ID: ${CMAKE_C_COMPILER_ID}")
+
 if(CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(option_prefix "")
     if (CMAKE_C_SIMULATE_ID MATCHES "MSVC")
         set(option_prefix "/clang:")
     endif()
-    set(print_target_triple ${CMAKE_C_COMPILER} ${option_prefix}--target=${LLVM_DEFAULT_TARGET_TRIPLE} ${option_prefix}-print-target-triple)
+    set(print_target_triple
+        ${CMAKE_C_COMPILER}
+        ${option_prefix}--target=${LLVM_DEFAULT_TARGET_TRIPLE}
+        ${option_prefix}-print-target-triple)
     execute_process(COMMAND ${print_target_triple}
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
@@ -263,7 +268,7 @@ endif()
 # other runtimes are added.
 foreach(entry ${runtimes})
     get_filename_component(projName ${entry} NAME)
-
+    note_log("add_subdirectory: ${entry} ${projName}")
     add_subdirectory(${entry} ${projName})
 endforeach()
 
@@ -275,6 +280,7 @@ if(LLVM_INCLUDE_TESTS)
     # umbrella_list_testsuite begin and end. The bootstrap runtimes builds
     # currently assumes this target exists.
     get_property(LLVM_RUNTIMES_LIT_DEPENDS GLOBAL PROPERTY LLVM_RUNTIMES_LIT_DEPENDS)
+    note_log("LLVM_RUNTIMES_LIT_DEPENDS: ${LLVM_RUNTIMES_LIT_DEPENDS}")
     if(LLVM_RUNTIMES_LIT_DEPENDS)
         # add_dependencies complains if called with no dependencies
         add_dependencies(runtimes-test-depends ${LLVM_RUNTIMES_LIT_DEPENDS})
@@ -287,18 +293,24 @@ if(LLVM_INCLUDE_TESTS)
         # If built by manually invoking cmake on this directory, we don't have
         # llvm-lit. If invoked via llvm/runtimes, the toplevel llvm cmake
         # invocation already generated the llvm-lit script.
+        note_log("add_subdirectory(${LLVM_MAIN_SRC_DIR}/utils/llvm-lit
+                     ${CMAKE_CURRENT_BINARY_DIR}/llvm-lit)")
         add_subdirectory(${LLVM_MAIN_SRC_DIR}/utils/llvm-lit
                      ${CMAKE_CURRENT_BINARY_DIR}/llvm-lit)
     endif()
 
     get_property(LLVM_RUNTIMES_LIT_TESTSUITES GLOBAL PROPERTY LLVM_RUNTIMES_LIT_TESTSUITES)
+    note_log("LLVM_RUNTIMES_LIT_TESTSUITES: ${LLVM_RUNTIMES_LIT_TESTSUITES}")
     string(REPLACE ";" "\n" LLVM_RUNTIMES_LIT_TESTSUITES "${LLVM_RUNTIMES_LIT_TESTSUITES}")
+    # NOTE: Write {LLVM_RUNTIMES_LIT_TESTSUITES} into llvm_project/build/lit.tests
+    note_log("Write {LLVM_RUNTIMES_LIT_TESTSUITES} into ${CMAKE_CURRENT_BINARY_DIR}/lit.tests")
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/lit.tests ${LLVM_RUNTIMES_LIT_TESTSUITES})
 else()
     # Create empty files so the parent build can use these unconditionally.
     file(TOUCH ${CMAKE_CURRENT_BINARY_DIR}/lit.tests)
 endif()
 
+note_log("SUB_COMPONENTS: ${SUB_COMPONENTS}, ***Maybe empty here***")
 get_property(SUB_COMPONENTS GLOBAL PROPERTY SUB_COMPONENTS)
 if(SUB_COMPONENTS)
     list(REMOVE_DUPLICATES SUB_COMPONENTS)
