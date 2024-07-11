@@ -1016,19 +1016,23 @@ set(files
   wctype.h
   )
 
+# NOTE: @ONLY: Restrict variable replacement to references of the form @VAR@.
+# This is useful for configuring scripts that use ${VAR} syntax.
 configure_file("__config_site.in" "${LIBCXX_GENERATED_INCLUDE_TARGET_DIR}/__config_site" @ONLY)
+# NOTE: COPYONLY means just copy file
 configure_file("${LIBCXX_ASSERTION_HANDLER_FILE}" "${LIBCXX_GENERATED_INCLUDE_DIR}/__assertion_handler" COPYONLY)
 
 set(_all_includes "${LIBCXX_GENERATED_INCLUDE_TARGET_DIR}/__config_site"
                   "${LIBCXX_GENERATED_INCLUDE_DIR}/__assertion_handler")
 foreach(f ${files})
-  set(src "${CMAKE_CURRENT_SOURCE_DIR}/${f}")
-  set(dst "${LIBCXX_GENERATED_INCLUDE_DIR}/${f}")
-  add_custom_command(OUTPUT ${dst}
-    DEPENDS ${src}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${src} ${dst}
-    COMMENT "Copying CXX header ${f}")
-  list(APPEND _all_includes "${dst}")
+    set(src "${CMAKE_CURRENT_SOURCE_DIR}/${f}")
+    set(dst "${LIBCXX_GENERATED_INCLUDE_DIR}/${f}")
+    add_custom_command(OUTPUT ${dst}
+        DEPENDS ${src}
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${src} ${dst}
+        COMMENT "Copying CXX header ${f}"
+    )
+    list(APPEND _all_includes "${dst}")
 endforeach()
 
 # Generate the IWYU mapping. This depends on all header files but it's also considered as an
@@ -1051,40 +1055,43 @@ target_include_directories(cxx-headers INTERFACE ${LIBCXX_GENERATED_INCLUDE_TARG
                                                  ${LIBCXX_GENERATED_INCLUDE_DIR})
 
 if (LIBCXX_INSTALL_HEADERS)
-  foreach(file ${files})
-    get_filename_component(dir ${file} DIRECTORY)
-    install(FILES ${file}
-      DESTINATION "${LIBCXX_INSTALL_INCLUDE_DIR}/${dir}"
-      COMPONENT cxx-headers
-      PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+    foreach(file ${files})
+        get_filename_component(dir ${file} DIRECTORY)
+        install(FILES ${file}
+            DESTINATION "${LIBCXX_INSTALL_INCLUDE_DIR}/${dir}"
+            COMPONENT cxx-headers
+            PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+        )
+    endforeach()
+
+    # Install the generated __config_site file to the per-target include dir.
+    install(FILES "${LIBCXX_GENERATED_INCLUDE_TARGET_DIR}/__config_site"
+        DESTINATION "${LIBCXX_INSTALL_INCLUDE_TARGET_DIR}"
+        PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+        COMPONENT cxx-headers
     )
-  endforeach()
 
-  # Install the generated __config_site file to the per-target include dir.
-  install(FILES "${LIBCXX_GENERATED_INCLUDE_TARGET_DIR}/__config_site"
-    DESTINATION "${LIBCXX_INSTALL_INCLUDE_TARGET_DIR}"
-    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
-    COMPONENT cxx-headers)
+    # Install the generated __assertion_handler file to the generic include dir.
+    install(FILES "${LIBCXX_GENERATED_INCLUDE_DIR}/__assertion_handler"
+        DESTINATION "${LIBCXX_INSTALL_INCLUDE_DIR}"
+        PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+        COMPONENT cxx-headers
+    )
 
-  # Install the generated __assertion_handler file to the generic include dir.
-  install(FILES "${LIBCXX_GENERATED_INCLUDE_DIR}/__assertion_handler"
-    DESTINATION "${LIBCXX_INSTALL_INCLUDE_DIR}"
-    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
-    COMPONENT cxx-headers)
+    # Install the generated IWYU file to the generic include dir.
+    install(FILES "${LIBCXX_GENERATED_INCLUDE_DIR}/libcxx.imp"
+        DESTINATION "${LIBCXX_INSTALL_INCLUDE_DIR}"
+        PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+        COMPONENT cxx-headers
+    )
 
-  # Install the generated IWYU file to the generic include dir.
-  install(FILES "${LIBCXX_GENERATED_INCLUDE_DIR}/libcxx.imp"
-    DESTINATION "${LIBCXX_INSTALL_INCLUDE_DIR}"
-    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
-    COMPONENT cxx-headers)
-
-  if (NOT CMAKE_CONFIGURATION_TYPES)
-    add_custom_target(install-cxx-headers
+    if (NOT CMAKE_CONFIGURATION_TYPES)
+        add_custom_target(install-cxx-headers
                       DEPENDS cxx-headers
                       COMMAND "${CMAKE_COMMAND}"
                               -DCMAKE_INSTALL_COMPONENT=cxx-headers
                               -P "${CMAKE_BINARY_DIR}/cmake_install.cmake")
-    # Stripping is a no-op for headers
-    add_custom_target(install-cxx-headers-stripped DEPENDS install-cxx-headers)
-  endif()
+        # Stripping is a no-op for headers
+        add_custom_target(install-cxx-headers-stripped DEPENDS install-cxx-headers)
+    endif()
 endif()
