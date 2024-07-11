@@ -65,6 +65,11 @@ public:
 #  endif // _LIBCPP_ENABLE_REMOVED_ALLOCATOR_CONST
 #endif   // _LIBCPP_STD_VER <= 17
 
+// NOTE: By making _Unique different for each instantiation, each
+// __non_trivial_if base class is unique, avoiding conflicts and ensuring that
+// it is safe to use __non_trivial_if as a base class for existing classes
+// without accidentally changing their memory layout.
+//
 // This class provides a non-trivial default constructor to the class that derives from it
 // if the condition is satisfied.
 //
@@ -104,6 +109,7 @@ public:
   _LIBCPP_DEPRECATED_IN_CXX23 typedef true_type is_always_equal;
 #endif
 
+  // NOTE: allocator using default constructor function
   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 allocator() _NOEXCEPT = default;
 
   template <class _Up>

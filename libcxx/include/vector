@@ -384,6 +384,7 @@ _LIBCPP_PUSH_MACROS
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 
+// TODO: Why comment out the default allocator
 template <class _Tp, class _Allocator /* = allocator<_Tp> */>
 class _LIBCPP_TEMPLATE_VIS vector {
 private:
@@ -673,11 +674,11 @@ public:
   template <class... _Args>
   _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI
 #if _LIBCPP_STD_VER >= 17
-  reference
-  emplace_back(_Args&&... __args);
+      reference
+      emplace_back(_Args&&... __args);
 #else
-  void
-  emplace_back(_Args&&... __args);
+      void
+      emplace_back(_Args&&... __args);
 #endif
 
 #if _LIBCPP_STD_VER >= 23
@@ -2902,8 +2903,7 @@ inline _LIBCPP_HIDE_FROM_ABI bool operator<=(const vector<_Tp, _Allocator>& __x,
 template <class _Tp, class _Allocator>
 _LIBCPP_HIDE_FROM_ABI constexpr __synth_three_way_result<_Tp>
 operator<=>(const vector<_Tp, _Allocator>& __x, const vector<_Tp, _Allocator>& __y) {
-  return std::lexicographical_compare_three_way(
-      __x.begin(), __x.end(), __y.begin(), __y.end(), std::__synth_three_way);
+  return std::lexicographical_compare_three_way(__x.begin(), __x.end(), __y.begin(), __y.end(), std::__synth_three_way);
 }
 
 #endif // _LIBCPP_STD_VER <= 17
