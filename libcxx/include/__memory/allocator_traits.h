@@ -300,6 +300,7 @@ struct _LIBCPP_TEMPLATE_VIS allocator_traits {
   template <class _Ap = _Alloc>
   [[nodiscard]] _LIBCPP_HIDE_FROM_ABI static constexpr allocation_result<pointer, size_type>
   allocate_at_least(_Ap& __alloc, size_type __n) {
+    // NOTE: allocate_at_least is just a simple wrapper around allocate.
     if constexpr (requires { __alloc.allocate_at_least(__n); }) {
       return __alloc.allocate_at_least(__n);
     } else {
