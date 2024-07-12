@@ -254,6 +254,7 @@ public:
 };
 #endif // _LIBCPP_ENABLE_REMOVED_ALLOCATOR_CONST
 
+// NOTE: wtf Constant return 0
 template <class _Tp, class _Up>
 inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 bool
 operator==(const allocator<_Tp>&, const allocator<_Up>&) _NOEXCEPT {
