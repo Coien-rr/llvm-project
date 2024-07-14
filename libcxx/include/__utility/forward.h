@@ -20,6 +20,7 @@
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 
+// NOTE: Both forward functions return a rvalue of the passed argument
 template <class _Tp>
 _LIBCPP_NODISCARD inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR _Tp&&
 forward(_LIBCPP_LIFETIMEBOUND __libcpp_remove_reference_t<_Tp>& __t) _NOEXCEPT {

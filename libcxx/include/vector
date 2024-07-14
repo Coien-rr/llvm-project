@@ -675,11 +675,11 @@ public:
   template <class... _Args>
   _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI
 #if _LIBCPP_STD_VER >= 17
-      reference
-      emplace_back(_Args&&... __args);
+  reference
+  emplace_back(_Args&&... __args);
 #else
-      void
-      emplace_back(_Args&&... __args);
+  void
+  emplace_back(_Args&&... __args);
 #endif
 
 #if _LIBCPP_STD_VER >= 23
@@ -756,6 +756,8 @@ public:
 
   _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI bool __invariants() const;
 
+  // NOTE: members of vector
+
 private:
   pointer __begin_ = nullptr;
   pointer __end_   = nullptr;
@@ -774,8 +776,9 @@ private:
       __throw_length_error();
     auto __allocation = std::__allocate_at_least(__alloc(), __n);
     __begin_          = __allocation.ptr;
-    __end_            = __allocation.ptr;
-    __end_cap()       = __begin_ + __allocation.count;
+    // NOTE: why this __end_ is equal to __begin_
+    __end_      = __allocation.ptr;
+    __end_cap() = __begin_ + __allocation.count;
     // NOTE: what is the purpose of this function
     __annotate_new(0);
   }
@@ -1098,6 +1101,7 @@ _LIBCPP_CONSTEXPR_SINCE_CXX20 void vector<_Tp, _Allocator>::__construct_at_end(s
   _ConstructTransaction __tx(*this, __n);
   const_pointer __new_end = __tx.__new_end_;
   for (pointer __pos = __tx.__pos_; __pos != __new_end; __tx.__pos_ = ++__pos) {
+    // NOTE: std::__to_address just check whether __pos is function type
     __alloc_traits::construct(this->__alloc(), std::__to_address(__pos));
   }
 }

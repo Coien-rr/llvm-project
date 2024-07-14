@@ -19,6 +19,7 @@ _LIBCPP_BEGIN_NAMESPACE_STD
 
 template <bool, class _Tp = void>
 struct _LIBCPP_TEMPLATE_VIS enable_if {};
+
 template <class _Tp>
 struct _LIBCPP_TEMPLATE_VIS enable_if<true, _Tp> {
   typedef _Tp type;
