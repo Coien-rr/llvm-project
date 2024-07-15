@@ -435,6 +435,8 @@ public:
     // NOTE: The purpose is to automatically clean up resources when an exception is thrown
     auto __guard = std::__make_exception_guard(__destroy_vector(*this));
     if (__n > 0) {
+      // NOTE: use __vallocate() to get allocated memory,
+      // then use __construct_at_end() to constructs objects sequentially at the address
       __vallocate(__n);
       __construct_at_end(__n);
     }
@@ -675,11 +677,11 @@ public:
   template <class... _Args>
   _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI
 #if _LIBCPP_STD_VER >= 17
-  reference
-  emplace_back(_Args&&... __args);
+      reference
+      emplace_back(_Args&&... __args);
 #else
-  void
-  emplace_back(_Args&&... __args);
+      void
+      emplace_back(_Args&&... __args);
 #endif
 
 #if _LIBCPP_STD_VER >= 23
@@ -777,8 +779,13 @@ private:
     auto __allocation = std::__allocate_at_least(__alloc(), __n);
     __begin_          = __allocation.ptr;
     // NOTE: why this __end_ is equal to __begin_
-    __end_      = __allocation.ptr;
+    // Because because the vector has not been filled yet.
+    __end_ = __allocation.ptr;
+
+    // NOTE: __end_cap() is actually a member function,
+    //          which is equal to this-> __end_cap_()
     __end_cap() = __begin_ + __allocation.count;
+
     // NOTE: what is the purpose of this function
     __annotate_new(0);
   }
@@ -1098,6 +1105,7 @@ vector<_Tp, _Allocator>::__recommend(size_type __new_size) const {
 //  Postcondition:  size() == size() + __n
 template <class _Tp, class _Allocator>
 _LIBCPP_CONSTEXPR_SINCE_CXX20 void vector<_Tp, _Allocator>::__construct_at_end(size_type __n) {
+  // NOTE: When __tx destructs, it assigns the end pointer to __end_ of vector(this)
   _ConstructTransaction __tx(*this, __n);
   const_pointer __new_end = __tx.__new_end_;
   for (pointer __pos = __tx.__pos_; __pos != __new_end; __tx.__pos_ = ++__pos) {
